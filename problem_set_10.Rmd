@@ -1,0 +1,119 @@
+---
+title: "problem_set_10"
+author: "Lydia Holley"
+date: "2024-03-21"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(markovchain)
+library(HMM)
+```
+
+## Problem A - Construct the Transmission and Emission matrices.
+
+```{r problemA}
+
+transmission<-matrix(data=c(0.9,0,0,1,0.1,0,0,0,0,1,0.8,0,0,0,0.2,0), nrow=4, byrow=F)
+
+emission<-matrix(data=c((1/64),0.99,(1/61),0,(60/64),0.01,(60/61),0,(3/64),0,0,1), nrow=4, byrow=F)
+
+colnames(transmission)<-c("intergenic","start","exon","stop")
+rownames(transmission)<-c("intergenic","start","exon","stop")
+
+colnames(emission)<-c("AUG","other","stop")
+rownames(emission)<-c("intergenic","start","exon","stop")
+
+transmission
+emission
+```
+### Question A1 - Report your transmission matrix\
+- in the code block
+
+### Question A2 - Report your emission matrix\
+- in the code block
+
+
+## Problem B - Probability of our observation
+```{r problemB}
+# ACU AAA AUG AUG GCG UGA UUU
+
+states<-c("intergenic","start","exon","stop")
+obvs<-c("AUG","other","stop")
+
+test_states<-c("intergenic","intergenic","start","exon","exon","stop","intergenic")
+test_obvs<-c("other","other","AUG","AUG","other","stop","other")
+
+mc<-new("markovchain", transitionMatrix=transmission)
+
+pi<-steadyStates(mc)
+
+hmm<-initHMM(States = states, Symbols = obvs, startProbs = c(1,0,0,0), transProbs = transmission, emissionProbs = emission)
+
+log_probs<-forward(hmm,test_obvs)
+
+probs<-exp(log_probs)
+
+sum(probs[,7])
+
+```
+### Question B1 - Report the probability of the 7 states listed above when starting at an intergenic state\
+- 0.0003972414
+
+
+
+## Problem C - Hidden States
+```{r problemC}
+
+back_probs<-exp(backward(hmm, test_obvs))
+
+posterior(hmm, test_obvs)
+
+viterbi(hmm, test_obvs)
+
+```
+
+### Question C1 - What state has the maximum probability in the steady states?\
+- Intergenic has the biggest probability in the steady states
+
+### Question C2 - What is the probability associated with the steady-state selected in Question C1?\
+- 0.5882353
+
+### Question C3 - What is the most likely series of hidden states associated with the above DNA/RNA sequence (the 7 observed states from Question B)\
+- intergenic, intergenic, intergenic, start, exon, stop, intergenic
+
+
+## Problem D - Tuning a parameter (4 points)
+```{r problemD}
+
+pos_t<-c(0:100)/100
+
+all_prob<-c()
+
+for(i in 1:101){
+ inter_to_inter<-pos_t[i]
+ inter_to_start<-1-pos_t[i]
+ A_this<-matrix(data=c(inter_to_inter,0,0,1,inter_to_start,0,0,0,0,1,0.8,0,0,0,0.2,0), nrow=4, byrow=F)
+ mc_this<-new("markovchain", transitionMatrix=A_this)
+ pi_this<-steadyStates(mc_this)
+ hmm_this<-initHMM(States = states, Symbols = obvs, startProbs = pi_this, transProbs = A_this, emissionProbs = emission)
+ this_p<-sum(exp(forward(hmm_this, test_obvs))[,7])
+ all_prob<-append(all_prob, this_p)
+}
+
+plot(pos_t,all_prob)
+
+```
+
+### Question D1.1 - Plot the transition probabilities against the probability of our observation. The observation is the 7 states listed in question B.\
+- included in code block
+
+### Question D1.2 - Include the plot\
+- included in code block
+
+### Question D2 - What Intergenic transition probabilities maximize the probability of our observed sequence?\
+- probabilities around 0.8 maximize the probability of our observed sequence
