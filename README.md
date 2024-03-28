@@ -1,2 +1,2 @@
 # Advanced-Statistics
-Scripts and Code Assignments from the Advanced Statistics course
+Scripts and Coding Assignments from the Advanced Statistics course
