@@ -1,0 +1,106 @@
+---
+title: "problem_set_8"
+author: "Lydia Holley"
+date: "2024-03-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Part 1 - Data formatting & Packages
+
+```{r part1}
+library(fitdistrplus)
+
+my_file <-read.delim("GSE37642-GPL97_series_matrix.EDITED.txt")
+my_data <- data.frame(my_file[,-1], row.names=my_file[,1])
+
+```
+
+# Part 2 - Testing Gene 200000_s_at in Row 1
+
+```{r part2}
+
+row_1 <- my_data[1,]
+row_1 <- as.numeric(unlist(row_1))
+
+norm<-suppressWarnings(fitdist(row_1, "norm"))
+lnorm<-suppressWarnings(fitdist(row_1, "lnorm"))
+gamma<-suppressWarnings(fitdist(row_1, "gamma"))
+
+denscomp(list(norm,lnorm,gamma))
+
+gofstat(list(norm,lnorm,gamma))
+
+```
+
+## Question 1 - Which model has the best fit?\
+- the normal model has the best fit because it has the smalled AIC and BIC values
+
+# Part 3 - Testing the first 500 genes for best fit distribution
+
+```{r part3}
+
+num_rows<-1:500
+best_models<-list()
+
+for (i in num_rows){
+  row_data<-as.numeric(unlist(my_data[i,]))
+  
+  norm<-suppressWarnings(fitdist(row_data, "norm"))
+  lnorm<-suppressWarnings(fitdist(row_data, "lnorm"))
+  gamma<-suppressWarnings(fitdist(row_data, "gamma"))
+  
+  results<-gofstat(list(norm,lnorm,gamma))
+  minimum<-min(results$aic)
+  model<-match(minimum,results$aic)
+  
+  best_models<-append(best_models,model)
+}
+
+# normal models
+num_norm<-length(which(best_models == 1))
+pcnt_norm<-num_norm/500
+
+# log normal models
+num_lnorm<-length(which(best_models == 2))
+pcnt_lnorm<-num_lnorm/500
+
+# gamma models
+num_gamma<-length(which(best_models == 3))
+pcnt_gamma<-num_gamma/500
+
+```
+
+## Question 2 - Report the percent of the 500 genes that fit the normal, log-normal, and gamma distributions.\
+- normal: 0.562
+- log normal: 0.394
+- gamma: 0.044
+
+# Part 4 - generate the AIC value for gene 200099_s_at (row 100) fit to the above Cauchy distribution
+
+```{r part4}
+
+row_100<-my_data[100,]
+num_cols<-1:422
+total_log<-0
+
+for (i in 1:length(row_100)){
+  value<-as.numeric(unlist(row_100[i]))
+  total_log<-total_log + dcauchy(value, location = 14.23807615, scale = 0.07723034, log = TRUE)
+  
+}
+norm_100<-suppressWarnings(fitdist(as.numeric(unlist(my_data[100,])), "norm"))
+norm_100$aic
+
+# AIC = -2ln(L) + 2p
+aic_cauchy<- (-2*total_log+(2*2))
+aic_cauchy
+
+```
+
+## Question 3 - Based on this, does the Cauchy distribution fit better than the normal distribution?\
+- the AIC for the normal model is -252.9705 and for the cauchy model is -324.0832. This indicates that the Cauchy model is the better fit.
