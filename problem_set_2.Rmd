@@ -1,0 +1,202 @@
+---
+title: "problem_set_2"
+author: "Lydia Holley"
+date: "2024-01-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load needed libraries
+library(naniar)
+library(dplyr)
+library(naniar)
+library(stringr)
+```
+
+# Step 1 - Import the Data
+
+The data will be imported here
+
+```{r data import}
+#load in data
+sw1<-read.delim("star_wars_data.1.tsv",header = T, sep = "\t")
+sw2<-read.delim("star_wars_data.2.txt",header = T, sep = ",")
+
+```
+
+# Step 2 - Clean up the data
+
+Data will be cleaned up here
+
+```{r clean data}
+#find initial number
+sum(is.na(sw1))
+
+# replace unknowns with proper NA
+sw1<-replace_with_na(sw1,replace = list(hair_color="unknown"))
+sw1<-replace_with_na(sw1,replace = list(height="unknown"))
+sw1<-replace_with_na(sw1,replace = list(mass="unknown"))
+sw1<-replace_with_na(sw1,replace = list(skin_color="unknown"))
+sw1<-replace_with_na(sw1,replace = list(eye_color="unknown"))
+sw1<-replace_with_na(sw1,replace = list(birth_year="unknown"))
+sw1<-replace_with_na(sw1,replace = list(sex="unknown"))
+sw1<-replace_with_na(sw1,replace = list(gender="unknown"))
+sw1<-replace_with_na(sw1,replace = list(homeworld_species="unknown"))
+
+# check final NA
+sum(is.na(sw1))
+
+```
+
+## **Question 1 - How many \_NA_s are in the cleaned dataset**
+
+There are 95 NAs in the cleaned dataset
+
+# Step 3 - Clean up the last column
+
+Split the homeworld_species column into 2 columns.
+
+```{r split column}
+# get homeworld and species columns
+sw1$homeworld<-str_split_i(sw1$homeworld_species, "_", 1)
+sw1$species<-str_split_i(sw1$homeworld_species, "_", 2)
+
+# remove combined column
+sw1<-subset(sw1, select = -homeworld_species)
+
+# find answer to question 2 by indexing and counting rows
+de_sp <- sw1[sw1$species %in% c('Droid', 'Ewok'), ]
+nrow(de_sp)
+```
+
+## **Question 2 - How many species are either a Droid or an Ewok**
+
+There are 7 Droid or Ewok species.
+
+```{r replace NA}
+# replace improper NA with proper NAs
+sw1<-replace_with_na(sw1,replace = list(homeworld="NA"))
+sw1<-replace_with_na(sw1,replace = list(species="NA"))
+
+# find number of homeworlds ignorings NAs
+n_distinct(sw1$homeworld,na.rm = T)
+
+```
+
+## **Question 3 - How many different home worlds are there? Do not include missing data**
+
+There are 48 different home worlds
+
+# Step 4 - Edit the mass column
+
+*already fixed the unknowns in this column*
+
+```{r median}
+# find the median mass, ignoring NAs
+median(as.numeric(sw1$mass), na.rm = T)
+
+```
+
+## **Question 4 - What is the median mass of all the characters?**
+
+The median mass of all the characters is 79.
+
+# Step 5 - Edit star_wars_data.2.txt
+
+This chunk will create columns for the film number
+
+```{r film}
+#split column
+sw2$first<-str_split_i(sw2$films, "AND", 1)
+sw2$second<-str_split_i(sw2$films, "AND", 2)
+sw2$third<-str_split_i(sw2$films, "AND", 3)
+sw2$fourth<-str_split_i(sw2$films, "AND", 4)
+sw2$fifth<-str_split_i(sw2$films, "AND", 5)
+sw2$sixth<-str_split_i(sw2$films, "AND", 6)
+sw2$seventh<-str_split_i(sw2$films, "AND", 7)
+
+# remove film column
+sw2<-subset(sw2, select = -films)
+
+#answer question 5 by indexing and counting rows
+sec_film <- sw2[sw2$second %in% c(' Return of the Jedi',' Return of the Jedi '), ]
+nrow(sec_film)
+```
+
+## **Question 5 - How many character's 2nd film was "Return of the Jedi"?**
+
+5 character's 2nd film was "Return of the Jedi"
+
+```{r one film}
+# how many characters have NA in the "second" column
+sum(is.na(sw2$second))
+
+```
+
+## **Question 6 - How many characters were only in 1 film?**
+
+46 characters were only in 1 film
+
+# Step 6 - Merge the datasets
+
+Combine the two datasets to answer the questions below
+
+```{r combine datasets}
+# join datasets
+joined<-full_join(sw1, sw2, join_by(name == names))
+
+# subset groups
+one_movie<- joined[ which(is.na(joined$second)),]
+more_movies<- joined[ which(!is.na(joined$second)),]
+
+# find means of subset
+mean(one_movie$height, na.rm = T)
+mean(more_movies$height, na.rm = T)
+
+```
+
+## **Question 7 - Which group has a greater mean height - characters in 1 movie or characters in more than 1 movie?**
+
+Characters in 1 movie have a greater mean height, but only by a very small amount (174.95 v 174.2683)
+
+```{r empire}
+# subset the 2nd movie criteria
+empire2<-joined[joined$second %in% c(' The Empire Strikes Back',' The Empire Strikes Back '), ]
+
+# subset human criteria
+emp_hum<-empire2[empire2$species %in% c('Human'),]
+
+# find answer to question 8
+nrow(emp_hum)
+```
+
+## **Question 8 - How many Human characters had their 2nd movie "The Empire Strikes Back"?**
+
+6 human characters had their 2nd movie "The Empire Strikes Back".
+
+```{r ratio}
+# only keep characters that appear in a second movie
+# we already have this from earlier, it is more_movies
+
+# subset into early movies
+early<-more_movies[more_movies$second %in% c(' The Empire Strikes Back',' The Empire Strikes Back ', ' Return of the Jedi',' Return of the Jedi ', ' A New Hope',' A New Hope '), ]
+
+# subset into later movies
+later<-more_movies[!(more_movies$second %in% c(' The Empire Strikes Back',' The Empire Strikes Back ', ' Return of the Jedi',' Return of the Jedi ', ' A New Hope',' A New Hope ')), ]
+
+#find early ratio
+emass<-median(as.numeric(early$mass), na.rm = T)
+eheight<-median(as.numeric(early$height), na.rm = T)
+emass/eheight
+
+#find later ratio
+lmass<-median(as.numeric(later$mass), na.rm = T)
+lheight<-median(as.numeric(later$height), na.rm = T)
+lmass/lheight
+```
+
+## **Question 9 - You hypothesize that the ratio of mass/height is smaller in characters from the earlier movies. Which group has a smaller median mass/height ratio - characters whose second movie was in the original trilogy ("The Empire Strikes Back," "Return of the Jedi," "A New Hope") or those who had a second movie from the later series?**
+
+Characters who had a second movie from the later series had a smaller median mass/height ratio.

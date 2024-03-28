@@ -1,0 +1,110 @@
+---
+title: "Problem_Set_1"
+author: "Lydia Holley"
+output: pdf_document
+date: "2024-01-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reshape2)
+```
+
+# Step 3 - Import the Data
+
+*Data will be imported here using read.table*
+
+```{r data import}
+data <- read.table("GSE164805_series_matrix.txt", header = TRUE)
+
+```
+
+## Find Solutions for Questions 2-7
+
+*This chunk contains the code for questions 2-7*
+
+```{r solutions2_7}
+# find rows and columns
+rows = nrow(data)
+cols = ncol(data)
+
+# find how data is stored
+str(data)
+
+# determine if there are null values in the dataset
+# is.na() returns true when there are null values
+# sum of that command give total number of true returns
+# <https://www.geeksforgeeks.org/how-to-find-and-count-missing-values-in-r-dataframe/>
+# used above page as reference
+q5 = sum(is.na(data))
+
+# check if column is a factor (given in assignment)
+q6 = is.factor(data$ID_REF)
+
+# for question 7 using as.factor to change data type and $ to get column
+
+```
+
+**Question 2 - *How many rows are in the dataset?***\
+There are 60795 rows in the dataset.
+
+**Question 3 - *How many columns are in the dataset?***\
+There are 16 columns in the dataset.
+
+**Question 4 - *Is the object storing our data a data frame or a matrix?***\
+The object storing our data is a data frame.
+
+**Question 5 - *Are there any NAs in our dataset?***\
+There are not any NAs in our data.
+
+**Question 6 - *Is the column ID_REF a factor?***\
+No, the column ID_REF is not a factor.
+
+**Question 7 - *What is the line of code you would use to set the column ID_REF as a factor?***\
+The line of code I would use is: `data$ID_REF <- as.factor(data$ID_REF)`
+
+# Step 4 - Subset the data frame
+
+*This chunk will subset the data to include only the desired data*
+
+The genes (ID_REFs) ASHG19AP1B100028737V5 ASHG19AP1B100017453V5 ASHG19AP1B100004705V5
+
+For the individuals (columns) GSM5019817 GSM5019827 GSM5019828
+
+```{r subset}
+
+# get desired columns
+s_data <- data[,c('ID_REF','GSM5019817', 'GSM5019827', 'GSM5019828')]
+
+# get desired rows
+s_data <- subset(s_data, ID_REF %in% 
+          c('ASHG19AP1B100028737V5','ASHG19AP1B100017453V5', 'ASHG19AP1B100004705V5'))
+
+# find mean for GSM5019817 columm
+q8 <- mean(s_data[['GSM5019817']])
+
+```
+
+**Question 8 - *What is the mean expression across the three genes for GSM5019817?***\
+The mean expression across the three genes for GSM5019817 is 3.95154.
+
+# Step 6 - Change the subset dataset to long format
+
+*This chunk will change the dataset to long format*
+
+```{r change subset}
+
+long_data <- melt(s_data, id.vars=c("ID_REF"), variable.name="Individuals", value.name="Expression")
+
+long_data
+```
+
+**Question 9 - *How many observations in our subset data have a gene expression value greater than 4?***\
+*This chunk will determine number of expressions \> 4*
+
+```{r q9}
+Q9 <- sum(long_data$Expression > 4)
+
+```
+
+There are 6 observations in our subset data with a gene expression value greater than 4.
