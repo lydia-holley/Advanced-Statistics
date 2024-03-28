@@ -1,0 +1,249 @@
+---
+title: "problem_set_4"
+author: "Lydia Holley"
+date: "2024-02-01"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(outliers)
+
+```
+
+# Read in the data
+
+```{r load data}
+ratio_data<-read.csv("LSDS-13_calcium-uptake_fajardoTRANSFORMED_1_72_85_93.csv", sep = "\t")
+full_data<-read.csv("OSD-488-samples.csv", sep = "\t")
+
+```
+
+# F test
+
+## Question 1
+
+Use the F-test to test equal variances at time-point twenty (20) between\
+
+-   Space_Flight vs Ground Control\
+-   F = 1.4396, there is not a statistically significant difference in variances\
+-   Space_Flight vs Cohort_Control\
+-   F = 2.086, there is not a statistically significant difference in variances\
+
+Report the F-value and if there is a statistically significant difference in the variances
+
+```{r Ftest}
+
+# Space Flight v Ground Control
+space_flight<-ratio_data[ratio_data$Spaceflight %in% c("Space_Flight"), ]
+space_flight_f<-space_flight$X20
+sd(space_flight_f) # has bigger variance, so will go in numerator
+
+ground_control<-ratio_data[ratio_data$Spaceflight %in% c("Ground_Control"), ]
+ground_control_f<-ground_control$X20
+sd(ground_control_f)
+
+var.test(space_flight_f,ground_control_f)
+
+# Space Flight v Cohort Control
+
+cohort_control<-ratio_data[ratio_data$Spaceflight %in% c("Cohort_Control"), ]
+cohort_control_f<-cohort_control$X20
+sd(cohort_control_f)
+
+var.test(space_flight_f,cohort_control_f)
+
+```
+
+# T-test - One Sample
+
+## Question 2
+
+At which time point(s) does the mean of all of the tibialis samples not deviate significantly from 0.8?\
+- The tibialis samples do not deviate significantly from 0.8 at X280 and X300.
+
+```{r Ttest-onesample}
+
+tibialis<-ratio_data[ratio_data$Tissue %in% c("Tibialis_Anterior"), ]
+numSeq<-seq(from = 20, to = 500, by = 20)
+fullSeq <- lapply(numSeq, function(x) ifelse(!is.na(x), paste0("X", x), x))
+q2_list<-list()
+
+for (i in fullSeq) {
+  column<-tibialis[, (names(ratio_data) %in% i)]
+  column<-na.omit(column)
+  t_test<-t.test(column, mu = 0.8)
+  p_value<-as.numeric(t_test$p.value)
+  if (p_value>0.05){
+    q2_list<-c(q2_list,i)
+  }
+}
+
+print(q2_list)
+```
+
+# T-Test - Two sample Tibialis
+
+## Question 3.1
+
+First, use the F-Test to determine if the variances of the two samples at time points 20 and 480 are statistically different from 1. (not sure if the number 1 is supposed to be the alternative or if I'm supposed to compare the two samples, as in the ratio between tham is 1 or they are equal. for the next question comparison makes the most sense, so that's what I'll do, but I'm confused by the question)\
+- the sample variances at X20 and X480 are not significantly different from each other
+
+```{r q3.1}
+
+tibialis<-ratio_data[ratio_data$Tissue %in% c("Tibialis_Anterior"), ]
+
+# Space Flight v Ground Control at X20
+space_flight<-tibialis[tibialis$Spaceflight %in% c("Space_Flight"), ]
+space_flight_t20<-space_flight$X20
+sd(space_flight_t20) 
+
+ground_control<-tibialis[tibialis$Spaceflight %in% c("Ground_Control"), ]
+ground_control_t20<-ground_control$X20
+sd(ground_control_t20) # has bigger variance, so will go in numerator
+
+var.test(ground_control_t20,space_flight_t20)
+
+# Space Flight v Ground Control at X480
+space_flight<-tibialis[tibialis$Spaceflight %in% c("Space_Flight"), ]
+space_flight_t480<-space_flight$X480
+sd(space_flight_t480) 
+
+ground_control<-tibialis[tibialis$Spaceflight %in% c("Ground_Control"), ]
+ground_control_t480<-ground_control$X480
+sd(ground_control_t480) # has bigger variance, so will go in numerator
+
+var.test(ground_control_t480,space_flight_t480)
+
+```
+
+## Question 3.2
+
+Second, Use the two-sample t-test with either equal or unequal variances (based on your result above) to compare the means of Ca2+ ratios in the tibialis at times 20 and 480. Is there statistical support for a difference in Ca2+ ratios after space flight?\
+- there is statistical support for a difference in Ca2+ ratios after space flight
+
+```{r q3.2}
+
+t20_ttest<-t.test(ground_control_t20,space_flight_t20, var.equal = T)
+t480_ttest<-t.test(ground_control_t480,space_flight_t480, var.equal = T)
+print(t20_ttest) # difference in mean is consistent with 0
+print(t480_ttest) # difference in mean is not equal to 0
+
+```
+
+# T-Test - Two Sample Soleus
+
+## Question 4.1
+
+First, use the F-Test to determine if the variances of the two samples at time points 20 and 480 are statistically different from 1.\
+- the sample variances at X20 and X480 are not significantly different from each other
+
+```{r q4.1}
+
+soleus<-ratio_data[ratio_data$Tissue %in% c("soleus_muscle"), ]
+
+# Space Flight v Ground Control at X20
+space_flight<-soleus[soleus$Spaceflight %in% c("Space_Flight"), ]
+space_flight_s20<-space_flight$X20
+sd(space_flight_s20) # has bigger variance, so will go in numerator
+
+ground_control<-soleus[soleus$Spaceflight %in% c("Ground_Control"), ]
+ground_control_s20<-ground_control$X20
+sd(ground_control_s20) 
+
+var.test(space_flight_s20,ground_control_s20)
+
+# Space Flight v Ground Control at X480
+space_flight<-soleus[soleus$Spaceflight %in% c("Space_Flight"), ]
+space_flight_s480<-space_flight$X480
+sd(space_flight_s480) 
+
+ground_control<-soleus[soleus$Spaceflight %in% c("Ground_Control"), ]
+ground_control_s480<-ground_control$X480
+sd(ground_control_s480) # has bigger variance, so will go in numerator
+
+var.test(ground_control_s480,space_flight_s480)
+
+```
+
+## Question 4.2
+
+Second, Use the two-sample t-test with either equal or unequal variances (based on your result above) to compare the means of Ca2+ ratios in the tibialis at times 20 and 480. Is there statistical support for a difference in Ca2+ ratios after space flight?
+
+-   there is not statistical support for a difference in Ca2+ ratios after space flight
+
+```{r q4.2}
+
+s20_ttest<-t.test(ground_control_s20,space_flight_s20, var.equal = T)
+s480_ttest<-t.test(ground_control_s480,space_flight_s480, var.equal = T)
+print(s20_ttest) # difference in mean is consistent with 0
+print(s480_ttest) # difference in mean is consistent with 0
+
+```
+
+# Chi-Squared Test
+
+## Question 5.1
+
+What is the p-value of your test?\
+- p-value = 0.533 - Not sure if this was a good test to do for this data because there are 0 Liquid Nitrogens above 1 - probably would be better to do the tibialis data or a different test
+
+```{r q5.1}
+
+
+joined<-full_join(ratio_data, full_data, join_by(Sample.Name == Sample.Name))
+soleus<-joined[joined$Tissue %in% c("soleus_muscle"), ]
+
+control<-soleus[soleus$Spaceflight %in% c("Cohort_Control","Ground_Control","Vivarium_Control"), ]
+
+chi_data<-control[, names(control) %in% c("X480","Parameter.Value..Sample.Preservation.Method")]
+rna<-chi_data[chi_data$Parameter.Value..Sample.Preservation.Method %in% c("RNALater"),]
+liquid_nitrogen<-chi_data[chi_data$Parameter.Value..Sample.Preservation.Method %in% c("Liquid Nitrogen"),]
+
+rna_g1<-as.numeric(sum(rna$X480 >= 1))
+rna_l1<-as.numeric(sum(rna$X480 < 1))
+ln_g1<-as.numeric(sum(liquid_nitrogen$X480 >= 1))
+ln_l1<-as.numeric(sum(liquid_nitrogen$X480 < 1))
+
+df<-data.frame("RNALater" = c(rna_g1,rna_l1), "Liquid Nitrogen" = c(ln_g1,ln_l1))
+row.names(df)<- c(">= 1","< 1")
+
+chisq.test(df)
+
+```
+
+## Question 5.2
+
+Based on the results of this test (including any errors) what would you tell your labmate?\
+- based on this test I would tell my labmate there is not evidence to suggest that the preservation method is not independent of the Ca2+ ratios. We would need more samples to support their hypothesis and would benefit from including more data.
+
+# Additional hypotheses & Question 6
+
+There are many more hypotheses we could test with this data. Now you need to come up with a hypothesis to test! Complete the steps below (1 point each)
+
+1.  Write out a hypothesis/question to test.\
+
+-   I hypothesize that there is one outlier data point in the Ca2+ ratios at time point X480.
+
+2.  Select the appropriate test and provide the null and alternative hypotheses.\
+
+-   I will use the Grubbs test.
+-   null hypothesis: the data contains no outliers
+-   alternative hypothesis: the data contains one outlier
+
+3.  Conduct the test and report the associated p-value\
+
+-   p-value = 1
+
+```{r grubbs test}
+
+grubbs_data<-ratio_data$X480
+grubbs.test(grubbs_data)
+
+```
+
+4.  In 1-2 sentences, summarize your results\
+
+-   These results do not indicate that the lowest value 0.5313 is an outlier. We fail to reject the null hypothesis that there are no outliers.

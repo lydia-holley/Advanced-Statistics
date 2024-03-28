@@ -1,0 +1,235 @@
+---
+title: "problem_set_5"
+author: "Lydia Holley"
+date: "2024-02-12"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(AICcmodavg)
+
+
+# import data
+gene_info<-read.csv("GLDS-207_rna_seq_ERCCnorm_differential_expression.csv", header = FALSE)
+sample_data<-read.csv("OSD-207-samples.csv")
+
+gene_info = setNames(data.frame(t(gene_info[,-1])), gene_info[,1])
+
+```
+
+# Step 1
+
+```{r join datasets}
+
+joined<-inner_join(sample_data, gene_info, join_by(Sample_Name == ENSEMBL))
+
+
+```
+
+## Question 1 - How many flies have the genotype "CS" and gene expression for the gene "FBgn0000015" greater than 1
+
+-   5 flies have genotype "CS" and gene expression for the gene "FBgn0000015" greater than 1
+
+```{r q1}
+
+gnCS_g1<-joined[joined$Factor_Value._Genotype %in% c("CS"), ]
+gnCS_g1<-gnCS_g1[gnCS_g1$FBgn0000015 > 1, ]
+nrow(gnCS_g1)
+
+```
+
+# Step 2
+
+## *Step 2.1 Multiple Tests Correction*
+
+```{r mtc}
+
+alpha<-(0.05/13885)
+
+```
+
+## Question 2 - Report the adjusted p-value for this test
+
+-   the adjusted p-value is 3.601e-06
+
+## *Step 2.2 - Test all genes using ANOVA*
+
+```{r multiple anova}
+alpha<-(0.05/13885)
+
+colSeq<-seq(from = 16, to = 13900, by = 1)
+q3_list<-list()
+
+for (i in colSeq) {
+  column<-joined[[i]]
+  column_name<-colnames(joined[i])
+  anova<-aov(as.numeric(column) ~ joined$Factor_Value._Spaceflight)
+  p_value<-summary(anova)[[1]][["Pr(>F)"]][1]
+  if (p_value<alpha){
+    q3_list<-c(q3_list,column_name)
+  }
+}
+
+length(q3_list)
+
+```
+
+## Question 3 - Report the total number of genes with a statistically significant difference in mean gene expression
+
+-   464 genes have a statistically significant difference in mean gene expression
+
+# Step 3 Investigate the gene FBgn0038749
+
+## *Step 3.1 Visualize our data*
+
+## Question 4 - Create the boxplot
+
+```{r boxplot}
+
+joined$FBgn0038749<-as.numeric(joined$FBgn0038749)
+anova<-aov(joined$FBgn0038749 ~ joined$Factor_Value._Spaceflight)
+summary(anova)
+
+ggplot(joined, aes(x=Factor_Value._Spaceflight, y=FBgn0038749, color=Factor_Value._Spaceflight)) + stat_boxplot(width=0.1)+geom_jitter( aes(fill=Factor_Value._Spaceflight), size=5, alpha=0.5)+theme_bw()
+
+```
+
+## *Step 3.2 Test Variances*
+
+```{r bartlett test}
+
+bartlett.test(FBgn0038749 ~ Factor_Value._Spaceflight, data=joined)
+
+```
+
+## Question 5 - Does our dataset violate the assumption of homogeneity?
+
+-   our dataset does not violate the assumption of homogeneity
+
+## *Step 3.4 Test residuals for normality*
+
+```{r normality}
+anova<-aov(joined$FBgn0038749 ~ joined$Factor_Value._Spaceflight)
+residuals<-anova$residuals
+shapiro.test(residuals)
+
+```
+
+## Question 6 - Does our dataset violate the assumption of normality?
+
+-   our data does violate the assumption of normality
+
+## *Step 3.5 Test for the impact of genotype*
+
+```{r genotype}
+
+# Two two-way anovas w/ spaceflight/control and genotype
+# one do not predict interaction between the variables
+two_way_add<-aov(FBgn0038749 ~ Factor_Value._Spaceflight + Factor_Value._Genotype, data = joined)
+print(summary(two_way_add))
+
+# second allow for interaction between the variables
+two_way_inter<-aov(FBgn0038749 ~ Factor_Value._Spaceflight * Factor_Value._Genotype, data = joined)
+print(summary(two_way_inter))
+
+# Generate and use the AIC table to report the best model.
+model.set<-list(two_way_add, two_way_inter)
+model.names<-c("additive","interaction")
+aictab(model.set, modnames=model.names)
+
+```
+
+## Question 7 - Is there an interaction between space-flight/ground-control and genotype?
+
+-   the data suggests there is not an interaction between space-flight/ground-control and genotype
+
+## *Step 3.6 Find out the gene name*
+
+```{r gene name}
+gene<-gene_info$FBgn0038749
+gene[2]
+
+```
+
+## Question 8 - What is the gene name of FBgn0038749
+
+-   "exit protein of rhodopsin and TRP A"
+
+# *Step 4 Investigate the gene FBgn0033687*
+
+## Question 9 - Create the boxplot
+
+```{r boxplot2}
+
+joined$FBgn0033687<-as.numeric(joined$FBgn0033687)
+anova<-aov(joined$FBgn0033687 ~ joined$Factor_Value._Spaceflight)
+summary(anova)
+
+ggplot(joined, aes(x=Factor_Value._Spaceflight, y=FBgn0033687, color=Factor_Value._Spaceflight)) + stat_boxplot(width=0.1)+geom_jitter( aes(fill=Factor_Value._Spaceflight), size=5, alpha=0.5)+theme_bw()
+
+```
+
+## *Step 3.2 Test Variances*
+
+```{r variances}
+
+bartlett.test(FBgn0033687 ~ Factor_Value._Spaceflight, data=joined)
+
+```
+
+## Question 10 - Does our dataset violate the assumption of homogeneity?
+
+-   our data does not violate the assumption of homogeneity
+
+## *Step 3.4 Test residuals for normality*
+
+```{r residuals test}
+
+anova<-aov(joined$FBgn0033687 ~ joined$Factor_Value._Spaceflight)
+residuals<-anova$residuals
+shapiro.test(residuals)
+
+```
+
+## Question 11 - Does our dataset violate the assumption of normality?
+
+-   our data does violate the assumption of normality
+
+## *Step 3.5 Test for the impact of genotype*
+
+```{r impact}
+# Two two-way anovas w/ spaceflight/control and genotype
+# one do not predict interaction between the variables
+two_way_add<-aov(FBgn0033687 ~ Factor_Value._Spaceflight + Factor_Value._Genotype, data = joined)
+print(summary(two_way_add))
+
+# second allow for interaction between the variables
+two_way_inter<-aov(FBgn0033687 ~ Factor_Value._Spaceflight * Factor_Value._Genotype, data = joined)
+print(summary(two_way_inter))
+
+# Generate and use the AIC table to report the best model.
+model.set<-list(two_way_add, two_way_inter)
+model.names<-c("additive","interaction")
+aictab(model.set, modnames=model.names)
+
+```
+
+## Question 12 - Is there an interaction between space-flight/ground-control and genotype?
+
+-   the data suggests there is an interaction between space-flight/ground-control and genotype
+
+## *Step 3.6 Find out the gene name*
+
+```{r name}
+gene<-gene_info$FBgn0033687
+gene[2]
+
+```
+
+## Question 13 - What is the gene name of FBgn0033687
+
+-   "uncharacterized protein"
