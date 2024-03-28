@@ -1,0 +1,232 @@
+---
+title: "problem_set_9"
+author: "Lydia Holley"
+date: "2024-03-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library('expm')
+```
+
+# Problem_Set_9
+
+## Problem A
+```{r problemA}
+
+prob <- matrix(ncol = 4, nrow = 4)
+x <- c("to A", "to C", "to T", "to G")
+y <- c("from A", "from C", "from T", "from G")
+colnames(prob) <- y
+rownames(prob) = x
+
+prob[1,] <- c(0,0.333,0.333,0.333)
+prob[2,] <- c(0.333,0,0.333,0.333)
+prob[3,] <- c(0.333,0.333,0,0.333)
+prob[4,] <- c(0.333,0.333,0.333,0)
+
+# qA1
+print(prob)
+
+# qA2
+df <- matrix(data=c(0,0,1,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+(prob %^% 4) %*% df
+
+# qA3
+q3_stop = FALSE
+count = 0
+while (q3_stop == FALSE){
+  after<-format(round(((prob %^% count) %*% df),2))
+  if (after[1] == 0.25 & after[2] == 0.25 & after[3] == 0.25 & after[4] == 0.25){
+    print(count)
+    print(after)
+    q3_stop = TRUE
+  }
+  count <- count + 1
+}
+
+# qA4
+df <- matrix(data=c(0.5,0,0,0.5),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+after4<-(prob %^% 4) %*% df
+qa4<-after4[1]+after4[4]
+print(qa4)
+```
+
+### Question A.1 - Report your transition matrix\
+- in the code block
+
+### Question A.2 - If you start at the base T, what is the probability that the state will return to T at 4 mutational events. Use the matrix math for this, which may require the expm package.\
+- 0.2582238
+
+### Question A.3 - After how many mutational events is the probability of being at any base equal if you start at state T. I.e. How many mutational events occur such that p(A)=p(T)=p(C)=p(G)=approximately 0.25. You should identify the number of steps at which R reports 0.25 as the value.\
+- 5
+
+### Question A.4 - If you start at either purine (A and G) with an equal probability, what is the probability that you will be at a purine after 4 mutational events?\
+- 0.5041512
+
+
+## Problem B
+
+```{r problemB}
+# qb1
+prob2 <- matrix(ncol = 4, nrow = 4)
+x <- c("to A", "to C", "to T", "to G")
+y <- c("from A", "from C", "from T", "from G")
+colnames(prob2) <- y
+rownames(prob2) = x
+
+probA<-9.4+10.4+27.2
+probC<-9.4+35.4+8.4
+probT<-35.4+10.4+9.2
+probG<-9.2+8.4+27.2
+
+prob2[1,] <- c(0,(9.4/probC),(10.4/probT),(27.2/probG))
+prob2[2,] <- c((9.4/probA),0,(35.4/probT),(8.4/probG))
+prob2[3,] <- c((10.4/probA),(35.4/probC),0,(9.2/probG))
+prob2[4,] <- c((27.2/probA),(8.4/probC),(9.2/probT),0)
+
+prob2
+
+# qb2
+df <- matrix(data=c(0,0,1,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+(prob2 %^% 4) %*% df
+
+# qb3
+state_prob<-list()
+
+df <- matrix(data=c(0.25,0.25,0.25,0.25),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+
+for (i in 1:20){
+  after3b<-((prob2 %^% i) %*% df)
+  state_prob<-append(state_prob,after3b[3,1])
+}
+
+plot(1:20,state_prob)
+
+# qb4
+df <- matrix(data=c(0.5,0,0,0.5),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+after4b<-(prob2 %^% 4) %*% df
+qb4<-after4b[1]+after4b[4]
+print(qb4)
+```
+
+### Question B.1 - Report your new transition matrix.\
+- in the code block
+
+### Question B.2 - If you start at the base T, what is the probability that the state will return to T at 4 mutational events. Use the matrix math for this, which may require the expm package.\
+- 0.3683680
+
+### Question B.3 - Plot the probability of the state being T for 20 mutational changes.\
+- in code block
+
+### Question B.4 - If you start at either purine with an equal probability, what is the probability that you will be at a purine after 4 mutational events?\
+- 0.4610521
+
+
+## Problem C
+```{r problemC}
+
+# qc1
+prob3 <- matrix(ncol = 4, nrow = 4)
+x <- c("to A", "to C", "to T", "to G")
+y <- c("from A", "from C", "from T", "from G")
+colnames(prob3) <- y
+rownames(prob3) = x
+
+probA<-9.4+10.4+27.2
+probC<-9.4+35.4+8.4
+probT<-35.4+10.4+9.2
+probG<-9.2+8.4+27.2
+
+prob3[1,] <- c(999,(9.4/probC),(10.4/probT),(27.2/probG))
+prob3[2,] <- c((9.4/probA),999,(35.4/probT),(8.4/probG))
+prob3[3,] <- c((10.4/probA),(35.4/probC),999,(9.2/probG))
+prob3[4,] <- c((27.2/probA),(8.4/probC),(9.2/probT),999)
+
+prob3<-prob3/1000
+
+prob3
+
+# qc2
+df <- matrix(data=c(0,0,1,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+after2c<-(prob3 %^% 4) %*% df
+
+qc2<- after2c[1]+after2c[2]+after2c[4]
+
+qc2
+
+# qc3
+df <- matrix(data=c(0,0,1,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+                      
+after3c<-(prob3 %^% 400) %*% df
+
+qc3<- after3c[1]+after3c[2]+after3c[4]
+
+qc3
+
+# qc4
+
+# A
+df <- matrix(data=c(1,0,0,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+
+(prob3 %^% 10000) %*% df
+
+# C
+df <- matrix(data=c(0,1,0,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+
+(prob3 %^% 10000) %*% df
+
+# T
+df <- matrix(data=c(0,0,1,0),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+
+(prob3 %^% 10000) %*% df
+
+# G
+df <- matrix(data=c(0,0,0,1),nrow=4,byrow=T)
+colnames(df) <- "prob"
+rownames(df) <- c("A", "C", "T", "G")
+
+(prob3 %^% 10000) %*% df
+
+````
+### Question C.1 - Report your transition matrix\
+- in the code block
+
+### Question C.2 - If you start at the base T, what is the probability that the state will be any other state than T after 4 mutational events. Use the matrix math for this, which may require the expm package.\
+- 0.003990983
+
+### Question C.3 - If you start at the base T, what is the probability that the state will be any other state than T after 400 mutational events. Use the matrix math for this, which may require the expm package.\
+- 0.3015315
+
+### Question C.4 - After 10,000 mutational events, what base(s) are you most likely to end up for each of the starting bases:
+- A: T
+- T: T
+- C: T
+- G: T
